@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Role Radar{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles can go here */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-indigo-600 text-white shadow-md">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <a href="/" class="text-xl font-bold">Role Radar</a>
+            <div class="space-x-4">
+                <a href="/finder" class="hover:text-indigo-200">Find Experts</a>
+                <a href="/signin" class="hover:text-indigo-200">Sign In</a>
+                <a href="/signup" class="hover:text-indigo-200 bg-indigo-500 px-3 py-1 rounded">Sign Up</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-6 mt-12">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <p class="text-lg font-semibold">Role Radar</p>
+                    <p class="text-gray-400">Find domain experts with ease</p>
+                </div>
+                <div class="flex space-x-4">
+                    <a href="#" class="text-gray-400 hover:text-white">About</a>
+                    <a href="#" class="text-gray-400 hover:text-white">Privacy</a>
+                    <a href="#" class="text-gray-400 hover:text-white">Terms</a>
+                    <a href="#" class="text-gray-400 hover:text-white">Contact</a>
+                </div>
+            </div>
+            <div class="mt-4 text-center text-gray-400">
+                <p>&copy; 2023 Role Radar. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

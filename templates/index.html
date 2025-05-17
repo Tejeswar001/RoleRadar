@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Veteran Talent Finder</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .confidence-bar {
+            height: 20px;
+            border-radius: 4px;
+        }
+        .high-confidence {
+            background-color: #28a745;
+        }
+        .medium-confidence {
+            background-color: #17a2b8;
+        }
+        .low-confidence {
+            background-color: #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">Veteran Talent Finder</h1>
+        
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Search Parameters</h5>
+                <p class="card-text"><strong>Domain:</strong> {{ domain }}</p>
+                <p class="card-text"><strong>Keywords:</strong> {{ keywords }}</p>
+            </div>
+        </div>
+        
+        <h2 class="mb-3">Results</h2>
+        
+        {% for expert in results %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h5 class="card-title">{{ expert.name }}</h5>
+                        <p class="card-text"><strong>Contact:</strong> {{ expert.contact }}</p>
+                        <p class="card-text"><strong>Location:</strong> {{ expert.location }}</p>
+                        
+                        <div class="mb-2">
+                            <strong>Confidence: {{ expert.confidence }}%</strong>
+                            <div class="progress mt-1">
+                                <div class="progress-bar {% if expert.confidence >= 90 %}bg-success{% elif expert.confidence >= 80 %}bg-info{% else %}bg-warning{% endif %}" 
+                                     role="progressbar" 
+                                     style="width: {{ expert.confidence }}%" 
+                                     aria-valuenow="{{ expert.confidence }}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-center justify-content-end">
+                        <button class="btn btn-outline-secondary">Opt-Out</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

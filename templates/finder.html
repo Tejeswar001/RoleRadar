@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block title %}Find Experts - Role Radar{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto fade-in">
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="py-4 px-6 bg-indigo-600 text-white">
+            <h2 class="text-2xl font-bold">Find Domain Experts</h2>
+            <p class="text-indigo-100">Discover professionals with 10+ years of experience</p>
+        </div>
+        <div class="py-8 px-6">
+            <form action="/results" method="post" class="space-y-6">
+                <div>
+                    <label for="domain" class="block text-gray-700 font-medium mb-2">Domain (required)</label>
+                    <input type="text" id="domain" name="domain" class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="e.g., Cybersecurity, Machine Learning, Finance" required>
+                    <p class="text-sm text-gray-500 mt-1">Specify the professional domain you're interested in</p>
+                </div>
+                
+                <div>
+                    <label for="keywords" class="block text-gray-700 font-medium mb-2">Keywords (optional)</label>
+                    <input type="text" id="keywords" name="keywords" class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="e.g., Python, Cloud, Fintech">
+                    <p class="text-sm text-gray-500 mt-1">Add keywords to narrow your search, separated by commas</p>
+                </div>
+                
+                <div class="pt-4">
+                    <button type="submit" class="w-full bg-indigo-600 text-white py-3 px-4 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition duration-300 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        Find Experts
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div class="mt-8 bg-indigo-50 rounded-lg p-6 border border-indigo-100">
+        <h3 class="text-lg font-semibold text-indigo-800 mb-2">How it works</h3>
+        <ul class="space-y-2 text-indigo-700">
+            <li class="flex items-start">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 mt-0.5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Enter a domain to find experts with 10+ years of experience</span>
+            </li>
+            <li class="flex items-start">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 mt-0.5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Add optional keywords to refine your search</span>
+            </li>
+            <li class="flex items-start">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 mt-0.5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>View detailed profiles with confidence scores</span>
+            </li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
