@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Veteran Talent Finder - Dark Theme</title>
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body {
+      background-color: #121212;
+      color: #e0e0e0;
+      min-height: 100vh;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .container {
+      max-width: 720px;
+      margin-top: 50px;
+      background-color: #1e1e1e;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0, 123, 255, 0.7);
+    }
+    h1 {
+      color: #64b5f6;
+      font-weight: 700;
+      margin-bottom: 30px;
+      text-align: center;
+      letter-spacing: 0.08em;
+    }
+    label {
+      font-weight: 600;
+      color: #90caf9;
+    }
+    .form-control {
+      background-color: #2c2c2c;
+      color: #e0e0e0;
+      border: 1px solid #64b5f6;
+    }
+    .form-control:focus {
+      background-color: #333333;
+      color: #ffffff;
+      border-color: #1e88e5;
+      box-shadow: 0 0 5px #1e88e5;
+    }
+    .btn-primary {
+      background-color: #1e88e5;
+      border: none;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      transition: background-color 0.3s ease;
+    }
+    .btn-primary:hover {
+      background-color: #1565c0;
+    }
+    #results .card {
+      background-color: #2a2a2a;
+      color: #e0e0e0;
+      border: none;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.85);
+      margin-bottom: 15px;
+      transition: box-shadow 0.3s ease;
+    }
+    #results .card:hover {
+      box-shadow: 0 4px 20px rgba(0,123,255,0.9);
+    }
+    .confidence-badge {
+      float: right;
+      background-color: #64b5f6;
+      color: #121212;
+      font-weight: 700;
+      border-radius: 15px;
+      padding: 4px 12px;
+      font-size: 0.85rem;
+      user-select: none;
+    }
+    .footer {
+      margin-top: 40px;
+      text-align: center;
+      color: #90caf9;
+      font-size: 0.85rem;
+    }
+    .tags-input-container {
+      border: 1px solid #64b5f6;
+      border-radius: 0.3rem;
+      background-color: #2c2c2c;
+      min-height: 2.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      padding: 0.3rem 0.75rem;
+      cursor: text;
+      color: #e0e0e0;
+    }
+    .tags-input-container:focus-within {
+      outline: none;
+      box-shadow: 0 0 5px 1px #1e88e5;
+      border-color: #1e88e5;
+      background-color: #333333;
+    }
+    .tag-item {
+      background-color: #64b5f6;
+      color: #121212;
+      border-radius: 15px;
+      padding: 0.25rem 0.8rem;
+      font-size: 0.9rem;
+      margin: 0 6px 6px 0;
+      display: flex;
+      align-items: center;
+      user-select: none;
+    }
+    .tag-item .remove-tag {
+      font-weight: 700;
+      margin-left: 0.5rem;
+      cursor: pointer;
+      color: #121212;
+      user-select: none;
+    }
+    .tags-input {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #e0e0e0;
+      flex-grow: 1;
+      min-width: 10ch;
+      font-size: 1rem;
+      padding: 0.25rem 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container shadow">
+    <h1>Veteran Talent Finder</h1>
+    <form id="searchForm" autocomplete="off" novalidate>
+      <div class="form-group">
+        <label for="domain">Domain <span class="text-danger">*</span></label>
+        <input type="text" class="form-control" id="domain" name="domain" placeholder="e.g., Cybersecurity" required />
+        <div class="invalid-feedback">Please enter a domain.</div>
+      </div>
+
+      <div class="form-group">
+        <label>Optional Keywords</label>
+        <div id="keywords-container" class="tags-input-container" tabindex="0" aria-label="Input keywords and press Enter to add each one"></div>
+        <small class="form-text text-muted">Press Enter to add a keyword. Press Backspace to remove last tag.</small>
+        <input type="hidden" name="keywords" id="keywords-input" />
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block">
+        <svg xmlns="http://www.w3.org/2000/svg" class="mr-2" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        Find Experts
+      </button>
+    </form>
+
+    <div id="loading" class="text-center mt-4" style="display:none;">
+      <div class="spinner-border text-primary" role="status" aria-live="polite" aria-label="Loading">
+        <span class="sr-only">Loading...</span>
+      </div>
+    </div>
+
+    <div id="results" class="mt-4"></div>
+
+    <footer class="footer">
+      Powered by public data sources and AI/NLP inference &copy; 2024 Veteran Talent Finder
+    </footer>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+  <script>
+  (function () {
+    const container = document.getElementById('keywords-container');
+    const hiddenInput = document.getElementById('keywords-input');
+    let tags = [];
+
+    // Render all tags and input field
+    function renderTags() {
+      container.innerHTML = '';
+
+      // Create tag elements with remove buttons
+      tags.forEach((tag, index) => {
+        const tagEl = document.createElement('span');
+        tagEl.classList.add('tag-item');
+        tagEl.textContent = tag;
+
+        const removeBtn = document.createElement('span');
+        removeBtn.classList.add('remove-tag');
+        removeBtn.setAttribute('role', 'button');
+        removeBtn.setAttribute('tabindex', '0');
+        removeBtn.setAttribute('aria-label', `Remove keyword ${tag}`);
+        removeBtn.innerHTML = '&times;';
+
+        // Remove tag on click or keyboard interaction
+        removeBtn.onclick = () => {
+          tags.splice(index, 1);
+          updateHiddenInput();
+          renderTags();
+          container.focus();
+        };
+        removeBtn.onkeypress = (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            removeBtn.onclick();
+          }
+        };
+
+        tagEl.appendChild(removeBtn);
+        container.appendChild(tagEl);
+      });
+
+      // Create and append input field for adding new tags
+      const inputEl = document.createElement('input');
+      inputEl.type = 'text';
+      inputEl.classList.add('tags-input');
+      inputEl.setAttribute('aria-label', 'Add keyword');
+      inputEl.placeholder = tags.length === 0 ? 'Press Enter to add keyword' : '';
+      container.appendChild(inputEl);
+      inputEl.focus();
+
+      // Handle input events for adding/removing tags
+      inputEl.addEventListener('keydown', function (e) {
+        const val = inputEl.value.trim();
+
+        if (e.key === 'Enter' && val) {
+          e.preventDefault();
+          if (!tags.includes(val)) {
+            tags.push(val);
+            updateHiddenInput();
+            renderTags();
+          } else {
+            inputEl.value = '';
+          }
+        } else if (e.key === 'Backspace' && val === '') {
+          if (tags.length > 0) {
+            tags.pop();
+            updateHiddenInput();
+            renderTags();
+          }
+        }
+      });
+    }
+
+    // Update hidden input with comma-separated tags
+    function updateHiddenInput() {
+      hiddenInput.value = tags.join(',');
+    }
+
+    renderTags();
+
+    // Focus input when container is clicked
+    container.addEventListener('click', () => {
+      const input = container.querySelector('input');
+      if (input) input.focus();
+    });
+  })();
+
+  // Search form submission and fetch request handler
+  document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('searchForm');
+    const domainInput = document.getElementById('domain');
+    const keywordInput = document.getElementById('keywords-input');
+    const loading = document.getElementById('loading');
+    const results = document.getElementById('results');
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      const domain = domainInput.value.trim();
+      const keywords = keywordInput.value.trim();
+
+      // Validate domain input
+      if (!domain) {
+        domainInput.classList.add('is-invalid');
+        domainInput.focus();
+        return;
+      } else {
+        domainInput.classList.remove('is-invalid');
+      }
+
+      results.innerHTML = '';
+      loading.style.display = 'block';
+
+      // Send POST request with domain and keywords as JSON
+      fetch('/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain, keywords }),
+      })
+        .then(response => {
+          if (!response.ok) throw new Error('Network response was not ok');
+          return response.json();
+        })
+        .then(data => {
+          loading.style.display = 'none';
+
+          if (!data.length) {
+            results.innerHTML = '<p class="text-center text-danger">No matching experts found.</p>';
+            return;
+          }
+
+          // Build HTML for each expert result
+          const html = data.map(exp => `
+            <div class="card mb-3">
+              <div class="card-body">
+                <h5 class="card-title">${exp.name} <span class="confidence-badge">${exp.confidence}%</span></h5>
+                <p class="card-text mb-1"><strong>Contact:</strong> <a href="${exp.contact}" target="_blank" rel="noopener noreferrer">${exp.contact}</a></p>
+                <p class="card-text"><strong>Location:</strong> ${exp.location}</p>
+              </div>
+            </div>
+          `).join('');
+
+          results.innerHTML = html;
+        })
+        .catch(error => {
+          loading.style.display = 'none';
+          results.innerHTML = '<p class="text-center text-danger">Error fetching experts. Please try again later.</p>';
+          console.error('Fetch error:', error);
+        });
+    });
+  });
+</script>
+
+
+</body>
+</html>
