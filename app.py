@@ -1,6 +1,6 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 import github_api
-
+from nlp_scoring import analyze_profile
 app = Flask(__name__)
 
 # Dummy data for results
@@ -56,6 +56,30 @@ def results():
                           experts=experts_list, 
                           domain=domain, 
                           keywords=keywords)
+
+@app.route('/analyze', methods=['POST'])
+def analyze():
+    if not request.is_json:
+        return jsonify({'error': 'Request must be JSON'}), 400
+        
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+    
+    text = data.get('text')
+    domain_keywords = data.get('domain_keywords')
+
+    if not text or not isinstance(text, str):
+        return jsonify({'error': 'Invalid or missing text'}), 400
+        
+    if not domain_keywords or not isinstance(domain_keywords, dict):
+        return jsonify({'error': 'Invalid or missing domain_keywords'}), 400
+
+    try:
+        result = analyze_profile(text, domain_keywords)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': f'Analysis failed: {str(e)}'}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
