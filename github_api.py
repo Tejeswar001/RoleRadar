@@ -1,31 +1,50 @@
-import requests
+import requests, time
 from datetime import datetime
 from config import GITHUB_TOKEN
 
 HEADERS = {'Authorization': f'token {GITHUB_TOKEN}'}
 
-def search_users_by_topic(topic, keywords=None):
-    # Create the base query
-    query = f"{topic} in:bio"
-    
-    # Add optional keywords to the query
-    if keywords:
-        keyword_str = " ".join(keywords)
-        query += f" {keyword_str} in:bio"
-
-    url = f"https://api.github.com/search/users"
-    params = {
-        "q": query,
-        "per_page": 10
-    }
-
-    res = requests.get(url, headers=HEADERS, params=params)
-
-    if res.status_code == 200:
-        return res.json()["items"]
-    else:
-        print(f"Error fetching users: {res.status_code} - {res.json().get('message')}")
+def search_users_by_topic(topic, keywords=None, limit=10):
+    """Initial user search looking at bios."""
+    kw = " ".join(keywords) if keywords else ""
+    query = f'{topic} {kw} in:bio'.strip()
+    r = requests.get("https://api.github.com/search/users",
+                     headers=HEADERS,
+                     params={"q": query, "per_page": limit})
+    if r.status_code != 200:
+        print("User search error:", r.status_code, r.json().get("message"))
         return []
+    return r.json()["items"]
+
+
+def keyword_in_readmes(username, keywords):
+    """Returns True if *all* keywords appear in any README of user’s repos."""
+    if not keywords:
+        return True   # nothing to check
+    # Build query: keyword1+keyword2+...+in:file+filename:README.md+user:username
+    kw_query = "+".join(keywords)
+    code_q = f"{kw_query}+in:file+filename:README.md+user:{username}"
+    r = requests.get("https://api.github.com/search/code",
+                     headers=HEADERS,
+                     params={"q": code_q, "per_page": 1})
+    if r.status_code != 200:
+        print("Code search error:", username, r.status_code)
+        return False
+    return r.json()["total_count"] > 0
+
+
+def find_relevant_users(topic, keywords=None, limit=10):
+    """Combine bio search + README check."""
+    users = search_users_by_topic(topic, keywords, limit=limit*2)  # fetch extra to filter
+    qualified = []
+    for u in users:
+        uname = u["login"]
+        if keyword_in_readmes(uname, keywords or []):
+            qualified.append(uname)
+            if len(qualified) >= limit:
+                break
+        time.sleep(0.2)   # be gentle to the API
+    return qualified
 
 def get_user_data(username):
     url = f'https://api.github.com/users/{username}'
@@ -95,7 +114,7 @@ def estimate_experience(username):
     }
  
 if __name__ == "__main__":
-    users = search_users_by_topic("machine learning", ["ai", "data"])
+    users = find_relevant_users("machine learning", ["ai", "data"])
     for user in users:
         username = user["login"]
         result = estimate_experience(username)

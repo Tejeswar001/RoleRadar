@@ -3,13 +3,6 @@ import github_api
 from nlp_scoring import analyze_profile
 app = Flask(__name__)
 
-# Dummy data for results
-dummy_experts = [
-    {"name": "Dr. Alice Chen", "contact": "alice@cybersecpro.com", "location": "Boston", "confidence": 92},
-    {"name": "Raj Kumar", "contact": "linkedin.com/in/rajkumar", "location": "Hyderabad", "confidence": 85},
-    {"name": "Elena Costa", "contact": "github.com/elenac", "location": "Milan", "confidence": 78}
-]
-
 @app.route('/')
 def home():
     return render_template('home.html')
