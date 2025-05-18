@@ -1,6 +1,8 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 import github_api
 from nlp_scoring import analyze_profile
+import serper_api
+
 app = Flask(__name__)
 
 @app.route('/')
@@ -28,8 +30,9 @@ def results():
         domain = request.form.get('domain', '')
         keywords = request.form.get('keywords', '')
     
+    keywords_list = keywords.split(",") if keywords else []
     experts_list = []
-    users = github_api.search_users_by_topic(domain, keywords)
+    users = github_api.search_users_by_topic(domain, keywords_list)
     for user in users:
         username = user["login"]
         result = github_api.estimate_experience(username)
@@ -44,6 +47,21 @@ def results():
             })
         else:
             print("Failed to retrieve user info.")
+    
+    li_results = serper_api.search_linkedin_profiles(f"{domain} {' '.join(keywords_list)}")
+    for item in li_results.get("organic", []):
+        snippet = item.get("snippet", "")
+        if not serper_api.has_10_years_experience(snippet):
+            continue
+
+        experts_list.append({
+            "name":       item["title"].split(" | ")[0],  # crude split
+            "contact":    item["link"],
+            "location":   "—",
+            "confidence": 75,  # lower until cross‑source verified
+            "github_url": None,
+            "source":     "LinkedIn"
+        })
 
     return render_template('results.html', 
                           experts=experts_list, 
