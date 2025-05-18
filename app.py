@@ -1,4 +1,5 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, jsonify,request
+from nlp_scoring import analyze_profile
 
 app = Flask(__name__)
 
@@ -38,6 +39,17 @@ def results():
                           experts=dummy_experts, 
                           domain=domain, 
                           keywords=keywords)
+@app.route('/analyze', methods=['POST'])
+def analyze():
+    data = request.json
+    text = data.get('text')
+    domain_keywords = data.get('domain_keywords')
+
+    if not text or not domain_keywords:
+        return jsonify({'error': 'Missing text or domain_keywords'}), 400
+
+    result = analyze_profile(text, domain_keywords)
+    return jsonify(result)
 
 if __name__ == '__main__':
     app.run(debug=True)
