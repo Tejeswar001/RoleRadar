@@ -1,6 +1,5 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify,request
+from flask import Flask, render_template, request, jsonify
 from nlp_scoring import analyze_profile
-
 app = Flask(__name__)
 
 # Dummy data for results
@@ -36,20 +35,33 @@ def results():
         keywords = request.form.get('keywords', '')
     
     return render_template('results.html', 
-                          experts=dummy_experts, 
-                          domain=domain, 
-                          keywords=keywords)
+                         experts=dummy_experts, 
+                         domain=domain, 
+                         keywords=keywords)
+
 @app.route('/analyze', methods=['POST'])
 def analyze():
-    data = request.json
+    if not request.is_json:
+        return jsonify({'error': 'Request must be JSON'}), 400
+        
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+    
     text = data.get('text')
     domain_keywords = data.get('domain_keywords')
 
-    if not text or not domain_keywords:
-        return jsonify({'error': 'Missing text or domain_keywords'}), 400
+    if not text or not isinstance(text, str):
+        return jsonify({'error': 'Invalid or missing text'}), 400
+        
+    if not domain_keywords or not isinstance(domain_keywords, dict):
+        return jsonify({'error': 'Invalid or missing domain_keywords'}), 400
 
-    result = analyze_profile(text, domain_keywords)
-    return jsonify(result)
+    try:
+        result = analyze_profile(text, domain_keywords)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': f'Analysis failed: {str(e)}'}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
