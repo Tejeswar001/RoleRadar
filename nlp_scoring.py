@@ -7,10 +7,12 @@ def score_domains(text, domain_keywords):
 
     for domain, keywords in domain_keywords.items():
         for kw in keywords:
-            if re.search(r'\b' + re.escape(kw.lower()) + r'\b', text_lower):
-                scores[domain] += 1
+            # Find all occurrences, count them
+            count = len(re.findall(r'\b' + re.escape(kw.lower()) + r'\b', text_lower))
+            scores[domain] += count
 
     return scores
+
 
 def normalize_scores(domain_score_list):
     total_scores = Counter()
