@@ -81,20 +81,21 @@ def analyze():
     if not data:
         return jsonify({'error': 'No data provided'}), 400
     
-    text = data.get('text')
+    sources = data.get('sources')
     domain_keywords = data.get('domain_keywords')
 
-    if not text or not isinstance(text, str):
-        return jsonify({'error': 'Invalid or missing text'}), 400
+    if not sources or not isinstance(sources, dict):
+        return jsonify({'error': 'Invalid or missing sources'}), 400
         
     if not domain_keywords or not isinstance(domain_keywords, dict):
         return jsonify({'error': 'Invalid or missing domain_keywords'}), 400
 
     try:
-        result = analyze_profile(text, domain_keywords)
+        result = analyze_profile(sources, domain_keywords)
         return jsonify(result)
     except Exception as e:
         return jsonify({'error': f'Analysis failed: {str(e)}'}), 500
+
 
 if __name__ == '__main__':
     app.run(debug=True)
