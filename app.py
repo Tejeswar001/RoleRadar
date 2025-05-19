@@ -28,50 +28,100 @@ def finder():
 def results():
     domain = ""
     keywords = ""
-    
+
     if request.method == 'POST':
-        domain = request.form.get('domain', '')
-        keywords = request.form.get('keywords', '')
-    
-    keywords_list = keywords.split(",") if keywords else []
+        domain = request.form.get('domain', '').strip()
+        keywords = request.form.get('keywords', '').strip()
+
+    keywords_list = [k.strip() for k in keywords.split(",")] if keywords else []
+    domain_keywords = {domain: keywords_list}
     experts_list = []
+
+    # --- GitHub Users ---
+    # This assumes you have a function `search_users_by_topic(domain, keywords_list)` returning users
     users = github_api.search_users_by_topic(domain, keywords_list)
+
     for user in users:
-        profile = github_api.estimate_experience(user["login"])
-        if profile and profile["is_veteran"] and profile["username"] not in opted_out:
+        username = user.get("login")
+        if not username:
+            continue
+
+        result = github_api.estimate_experience(username)
+        if result:
+            # Prepare text sources for NLP scoring
+            sources = {
+                'github': " ".join([
+                    result.get('bio', '') or '',
+                    result.get('repos_description', '') or '',
+                    result.get('topics', '') or '',
+                    result.get('contributions', '') or ''
+                ])
+            }
+
+            scores_data = analyze_profile(sources, domain_keywords)
+            confidence_score = max(
+                [int(round(score * 100)) for score in scores_data.get("domain_scores", {}).values()],
+                default=10  # Minimum 10%
+            )
+
             experts_list.append({
-                "id":        f"github:{profile['username']}",
-                "name":      profile["username"],
-                "contact":   profile["email"] or "",
-                "location":  profile.get("location","----"),
-                "confidence": 90,
-                "url":       profile["html_url"],
-                "source":    "GitHub"
+                "name": result.get('username'),
+                "bio": result.get('bio', ''),
+                "contact": result.get('email', None) or result.get('html_url', ''),
+                "location": "----",  # Placeholder, GitHub API does have location field if you want to add
+                "confidence": confidence_score,
+                "url": result.get("html_url"),
+                "source": "GitHub"
             })
-    
+        else:
+            print(f"Failed to retrieve info for user: {username}")
+
+    # --- LinkedIn results via Serper API ---
     li_results = serper_api.search_linkedin_profiles(f"{domain} {' '.join(keywords_list)}")
     for item in li_results.get("organic", []):
         snippet = item.get("snippet", "")
         if not serper_api.has_10_years_experience(snippet):
             continue
 
+        sources = {'linkedin': snippet}
+        scores_data = analyze_profile(sources, domain_keywords)
+        confidence_score = max(
+            [int(round(score * 100)) for score in scores_data.get("domain_scores", {}).values()],
+            default=0
+        )
+
         experts_list.append({
-            "name":       item["title"].split(" | ")[0],  # crude split
-            "contact":    item["link"],
-            "location":   "—",
-            "confidence": 75,  # lower until cross‑source verified
-            "url": item["link"],
-            "source":     "LinkedIn"
+            "name": item.get("title", "").split(" | ")[0],
+            "contact": item.get("link"),
+            "location": "—",
+            "confidence": confidence_score,
+            "url": item.get("link"),
+            "source": "LinkedIn"
         })
 
-    for sc in scholar_api.search_scholar_veterans(domain, keywords):
-        if sc["name"] not in opted_out:
-            experts_list.append(sc)
+    # --- Scholar veterans ---
+    for sc in scholar_api.search_scholar_veterans(domain, keywords_list):
+        profile_text = sc.get('profile_text') or (sc.get('title', '') + ' ' + sc.get('interests', ''))
+        sources = {'scholar': profile_text}
+
+        scores_data = analyze_profile(sources, domain_keywords)
+        if scores_data.get("domain_scores"):
+            max_score = max(scores_data["domain_scores"].values())
+            confidence_score = max(20, int(round(max_score * 100)))  # Minimum 20%
+        else:
+            confidence_score = 20
+
+        sc['confidence'] = confidence_score
+        sc['source'] = "Scholar"
+        experts_list.append(sc)
+
+    experts_list.sort(key=lambda x: x.get('confidence', 0), reverse=True)
 
     return render_template('results.html', 
                           experts=experts_list, 
                           domain=domain, 
                           keywords=keywords)
+
 
 @app.post("/opt-out/<profile_id>")
 def opt_out(profile_id):

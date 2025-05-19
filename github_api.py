@@ -58,7 +58,7 @@ def get_user_data(username):
         "name": data.get("name"),
         "email": data.get("email"),
         "blog": data.get("blog"),
-        "bio": data.get("bio"),
+        "bio": data.get("bio"),              # <- this is bio
         "html_url": data.get("html_url"),
         "created_at": data.get("created_at")
     }
@@ -105,27 +105,28 @@ def estimate_experience(username):
 
     return {
         "username": username,
-        "created_at": created_at,
+        "bio": user_data.get("bio", ""),
+        "created_at": user_data.get("created_at"),
         "earliest_repo_year": earliest_repo_year,
         "estimated_experience_years": experience_years,
         "is_veteran": experience_years >= 10,
         "html_url": user_data.get('html_url'),
-        "email": email
+        "email": user_data.get('email')
     }
  
 if __name__ == "__main__":
     users = find_relevant_users("machine learning", ["ai", "data"])
-    for user in users:
-        username = user["login"]
+    for username in users:
         result = estimate_experience(username)
-        if result:
-          if result['is_veteran']:
+        user_info = get_user_data(username)
+
+        if result and result['is_veteran'] and user_info:
             print("----- GitHub Experience Report -----")
             print(f"Username       : {result['username']}")
             print(f"Account Created: {result['created_at']}")
             print(f"Earliest Repo  : {result['earliest_repo_year']}")
             print(f"Experience     : {result['estimated_experience_years']} years")
-            print(f"Contact Information : {result['email']}")
-            print(result)
-        else:
-            print("Failed to retrieve user info.")
+            print(f"Contact Email  : {result['email']}")
+            print(f"Bio            : {user_info.get('bio')}")
+            print(f"Profile Link   : {result['html_url']}")
+            print("-------------------------------------")
