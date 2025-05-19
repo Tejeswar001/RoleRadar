@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, jsonify
 import github_api
 from nlp_scoring import analyze_profile
 import serper_api
+import scholar_api
 
 app = Flask(__name__)
 
@@ -43,7 +44,7 @@ def results():
                 "contact": result['email'], # later change to github link if contact is not available
                 "location": "----", # Placeholder for location
                 "confidence": 90 ,             # dummy score for now
-                "github_url": result["html_url"]
+                "url": result["html_url"]
             })
         else:
             print("Failed to retrieve user info.")
@@ -59,9 +60,12 @@ def results():
             "contact":    item["link"],
             "location":   "—",
             "confidence": 75,  # lower until cross‑source verified
-            "github_url": None,
+            "url": item["link"],
             "source":     "LinkedIn"
         })
+
+    for sc in scholar_api.search_scholar_veterans(domain, keywords):
+        experts_list.append(sc)
 
     return render_template('results.html', 
                           experts=experts_list, 
