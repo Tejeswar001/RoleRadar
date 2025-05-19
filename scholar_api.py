@@ -8,6 +8,7 @@ from __future__ import annotations
 import os, re, requests, datetime as dt
 from typing import List, Dict
 from config import SERPER_API_KEY
+import bs4
 
 SERPER_KEY = SERPER_API_KEY
 if not SERPER_KEY:
@@ -46,6 +47,17 @@ def _is_veteran(snippet: str) -> bool:
 
     return False
 
+def homepage_from_scholar(profile_url):
+    html = requests.get(profile_url, timeout=10,
+                        headers={"User-Agent":"Mozilla/5.0"}).text
+    soup = bs4.BeautifulSoup(html, "html.parser")
+
+    # anchor that literally says “Homepage”
+    link = soup.find("a", string=re.compile(r'homepage', re.I))
+    if link and link.get("href"):
+        return requests.compat.urljoin(profile_url, link["href"])
+    return None
+
 
 # -------------------------------------------------
 # Public function
@@ -64,12 +76,15 @@ def search_scholar_veterans(domain: str, keywords: str = "",
         if not _is_veteran(item.get("snippet", "")):
             continue
 
+        profile_url = item["link"]           # from Serper search hit
+        home = homepage_from_scholar(profile_url)
+
         veterans.append({
             "name":        item["title"].split(" - ")[0],
-            "contact":     item["link"],          # Scholar has no email; use profile URL
+            "contact":     home or None,          # Scholar has no email; use profile URL
             "location":    "—",                   # Not exposed publicly
             "confidence":  70,                    # Base; tune later
-            "scholar_url": item["link"],
+            "url": item["link"],
             "source":      "Google Scholar",
             "snippet":     item.get("snippet")
         })

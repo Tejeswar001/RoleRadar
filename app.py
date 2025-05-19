@@ -4,6 +4,8 @@ from nlp_scoring import analyze_profile
 import serper_api
 import scholar_api
 
+opted_out = set()
+
 app = Flask(__name__)
 
 @app.route('/')
@@ -35,19 +37,17 @@ def results():
     experts_list = []
     users = github_api.search_users_by_topic(domain, keywords_list)
     for user in users:
-        username = user["login"]
-        result = github_api.estimate_experience(username)
-        if result:
-          if result['is_veteran']:
+        profile = github_api.estimate_experience(user["login"])
+        if profile and profile["is_veteran"] and profile["username"] not in opted_out:
             experts_list.append({
-                "name":     result['username'],
-                "contact": result['email'], # later change to github link if contact is not available
-                "location": "----", # Placeholder for location
-                "confidence": 90 ,             # dummy score for now
-                "url": result["html_url"]
+                "id":        f"github:{profile['username']}",
+                "name":      profile["username"],
+                "contact":   profile["email"] or "",
+                "location":  profile.get("location","----"),
+                "confidence": 90,
+                "url":       profile["html_url"],
+                "source":    "GitHub"
             })
-        else:
-            print("Failed to retrieve user info.")
     
     li_results = serper_api.search_linkedin_profiles(f"{domain} {' '.join(keywords_list)}")
     for item in li_results.get("organic", []):
@@ -65,12 +65,18 @@ def results():
         })
 
     for sc in scholar_api.search_scholar_veterans(domain, keywords):
-        experts_list.append(sc)
+        if sc["name"] not in opted_out:
+            experts_list.append(sc)
 
     return render_template('results.html', 
                           experts=experts_list, 
                           domain=domain, 
                           keywords=keywords)
+
+@app.post("/opt-out/<profile_id>")
+def opt_out(profile_id):
+    opted_out.add(profile_id)
+    return jsonify({"status": "ok"})
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
