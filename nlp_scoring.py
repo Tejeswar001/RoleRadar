@@ -76,14 +76,16 @@ def analyze_profile(texts_dict, domain_keywords):
         gemini_scores = gemini_api_score(text, domain_keywords)
 
         for domain in domain_keywords:
-            # Simple weighted sum per source (weights can be tuned)
-            combined = keyword_scores.get(domain, 0) * 0.35 + gemini_scores.get(domain, 0) * 0.65
+            default_score = 100  # baseline/default contribution
+            combined = (
+                keyword_scores.get(domain, 0) * 0.30 +
+                gemini_scores.get(domain, 0) * 0.50 +
+                default_score * 0.20
+            )
             combined_scores[domain].append(combined)
     
-    # Average across all sources for each domain
     avg_scores = {}
     for domain, scores in combined_scores.items():
         avg_scores[domain] = round(sum(scores) / len(scores), 2) if scores else 0.0
 
-    # No forced normalization, scores will naturally range mostly between 0-100
     return avg_scores

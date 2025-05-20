@@ -100,8 +100,8 @@
                         <div class="text-sm font-medium text-gray-700 mb-1">Confidence Score</div>
                         <div class="w-full bg-gray-200 rounded-full h-2.5">
                             <div class="h-2.5 rounded-full
-                                {% if expert.confidence >= 90 %}bg-green-500
-                                {% elif expert.confidence >= 80 %}bg-blue-500
+                                {% if expert.confidence >= 60 %}bg-green-500
+                                {% elif expert.confidence >= 40 %}bg-blue-500
                                 {% else %}bg-yellow-500{% endif %}"
                                 style="width: {{ expert.confidence }}%">
                             </div>

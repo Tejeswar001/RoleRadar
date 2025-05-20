@@ -37,45 +37,21 @@ def results():
 
     keywords_list = [k.strip() for k in keywords.split(",")] if keywords else []
     domain_keywords = {domain: keywords_list}
-    experts_list = []
 
-    # --- GitHub Users ---
-    users = github_api.search_users_by_topic(domain, keywords_list)
+    scholar_experts = []
+    linkedin_experts = []
+    github_experts = []
 
-    for user in users:
-        username = user.get("login")
-        if not username:
-            continue
+    # --- Scholar veterans ---
+    for sc in scholar_api.search_scholar_veterans(domain, keywords_list):
+        profile_text = sc.get('profile_text') or (sc.get('title', '') + ' ' + sc.get('interests', ''))
+        sources = {'scholar': profile_text}
+        scores_data = analyze_profile(sources, domain_keywords)
+        confidence_score = max([int(round(score)) for score in scores_data.values()], default=0)
 
-        result = github_api.estimate_experience(username)
-        if result:
-            sources = {
-                'github': " ".join([
-                    result.get('bio', '') or '',
-                    result.get('repos_description', '') or '',
-                    result.get('topics', '') or '',
-                    result.get('contributions', '') or ''
-                ])
-            }
-
-            scores_data = analyze_profile(sources, domain_keywords)
-            # Extract confidence directly from analyze_profile output (dict of domain: score in 0-100)
-            confidence_score = max(
-                [int(round(score)) for score in scores_data.values()],
-                default=0
-            )
-
-            experts_list.append({
-                "name": result.get('username'),
-                "bio": result.get('bio', ''),
-                "contact": result.get('email', None) or result.get('html_url', ''),
-                "location": "----",
-                "confidence": confidence_score,
-                "url": result.get("html_url"),
-                "source": "GitHub"
-            })
-        else:
-            print(f"Failed to retrieve info for user: {username}")
+        sc['confidence'] = confidence_score
+        sc['source'] = "Scholar"
+        scholar_experts.append(sc)
 
     # --- LinkedIn results via Serper API ---
     li_results = serper_api.search_linkedin_profiles(f"{domain} {' '.join(keywords_list)}")
@@ -86,12 +62,9 @@ def results():
 
         sources = {'linkedin': snippet}
         scores_data = analyze_profile(sources, domain_keywords)
-        confidence_score = max(
-            [int(round(score)) for score in scores_data.values()],
-            default=0
-        )
+        confidence_score = max([int(round(score)) for score in scores_data.values()], default=0)
 
-        experts_list.append({
+        linkedin_experts.append({
             "name": item.get("title", "").split(" | ")[0],
             "contact": item.get("link"),
             "location": None,
@@ -100,29 +73,53 @@ def results():
             "source": "LinkedIn"
         })
 
-    # --- Scholar veterans ---
-    for sc in scholar_api.search_scholar_veterans(domain, keywords_list):
-        profile_text = sc.get('profile_text') or (sc.get('title', '') + ' ' + sc.get('interests', ''))
-        sources = {'scholar': profile_text}
+    # --- GitHub Users ---
+    users = github_api.search_users_by_topic(domain, keywords_list)
+    for user in users:
+        username = user.get("login")
+        if not username:
+            continue
 
-        scores_data = analyze_profile(sources, domain_keywords)
-        if scores_data:
-            max_score = max(scores_data.values())
-            confidence_score = max(0, int(round(max_score)))
+        result = github_api.estimate_experience(username)
+        if result and result.get('is_veteran'):
+            sources = {
+                'github': " ".join([
+                    result.get('bio', '') or '',
+                    result.get('repos_description', '') or '',
+                    result.get('topics', '') or '',
+                    result.get('contributions', '') or ''
+                ])
+            }
+
+            scores_data = analyze_profile(sources, domain_keywords)
+            confidence_score = max(
+                [int(round(score)) for score in scores_data.values()],
+                default=0
+            )
+
+            github_experts.append({
+                "name": result.get('username'),
+                "bio": result.get('bio', ''),
+                "contact": result.get('email', None) or result.get('html_url', ''),
+                "location": "----",
+                "confidence": confidence_score,
+                "url": result.get("html_url"),
+                "source": "GitHub"
+            })
         else:
-            confidence_score = 0
+            print(f"Skipped: {username} (Not enough experience or failed lookup)")
 
-        sc['confidence'] = confidence_score
-        sc['source'] = "Scholar"
-        experts_list.append(sc)
+    # --- Merge in required order ---
+    experts_list = scholar_experts + linkedin_experts + github_experts
 
-    # Sort all experts descending by confidence score
+    # --- Sort all experts descending by confidence score ---
     experts_list.sort(key=lambda x: x.get('confidence', 0), reverse=True)
 
-    return render_template('results.html', 
-                          experts=experts_list, 
-                          domain=domain, 
-                          keywords=keywords)
+    return render_template('results.html',
+                           experts=experts_list,
+                           domain=domain,
+                           keywords=keywords)
+
 
 @app.post("/opt-out/<profile_id>")
 def opt_out(profile_id):

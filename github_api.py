@@ -90,7 +90,6 @@ def estimate_experience(username):
     created_year = datetime.strptime(created_at, "%Y-%m-%dT%H:%M:%SZ").year
     current_year = datetime.now().year
     account_age = current_year - created_year
-    email = user_data.get('email')
 
     repos = get_user_repos(username)
     earliest_repo_year = None
@@ -101,7 +100,10 @@ def estimate_experience(username):
             if earliest_repo_year is None or year < earliest_repo_year:
                 earliest_repo_year = year
 
-    experience_years = max(account_age, current_year - earliest_repo_year) if earliest_repo_year else account_age
+    if earliest_repo_year:
+        experience_years = current_year - min(created_year, earliest_repo_year)
+    else:
+        experience_years = account_age
 
     return {
         "username": username,
@@ -113,6 +115,7 @@ def estimate_experience(username):
         "html_url": user_data.get('html_url'),
         "email": user_data.get('email')
     }
+
  
 if __name__ == "__main__":
     users = find_relevant_users("machine learning", ["ai", "data"])
