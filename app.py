@@ -1,8 +1,9 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify
+from flask import Flask, render_template, request, jsonify
 import github_api
 from nlp_scoring import analyze_profile
 import serper_api
 import scholar_api
+import random
 
 opted_out = set()
 
@@ -24,6 +25,7 @@ def signup():
 def finder():
     return render_template('finder.html')
 
+
 @app.route('/results', methods=['GET', 'POST'])
 def results():
     domain = ""
@@ -38,7 +40,6 @@ def results():
     experts_list = []
 
     # --- GitHub Users ---
-    # This assumes you have a function `search_users_by_topic(domain, keywords_list)` returning users
     users = github_api.search_users_by_topic(domain, keywords_list)
 
     for user in users:
@@ -48,7 +49,6 @@ def results():
 
         result = github_api.estimate_experience(username)
         if result:
-            # Prepare text sources for NLP scoring
             sources = {
                 'github': " ".join([
                     result.get('bio', '') or '',
@@ -59,16 +59,17 @@ def results():
             }
 
             scores_data = analyze_profile(sources, domain_keywords)
+            # Extract confidence directly from analyze_profile output (dict of domain: score in 0-100)
             confidence_score = max(
-                [int(round(score * 100)) for score in scores_data.get("domain_scores", {}).values()],
-                default=10  # Minimum 10%
+                [int(round(score)) for score in scores_data.values()],
+                default=0
             )
 
             experts_list.append({
                 "name": result.get('username'),
                 "bio": result.get('bio', ''),
                 "contact": result.get('email', None) or result.get('html_url', ''),
-                "location": "----",  # Placeholder, GitHub API does have location field if you want to add
+                "location": "----",
                 "confidence": confidence_score,
                 "url": result.get("html_url"),
                 "source": "GitHub"
@@ -86,14 +87,14 @@ def results():
         sources = {'linkedin': snippet}
         scores_data = analyze_profile(sources, domain_keywords)
         confidence_score = max(
-            [int(round(score * 100)) for score in scores_data.get("domain_scores", {}).values()],
+            [int(round(score)) for score in scores_data.values()],
             default=0
         )
 
         experts_list.append({
             "name": item.get("title", "").split(" | ")[0],
             "contact": item.get("link"),
-            "location": "—",
+            "location": None,
             "confidence": confidence_score,
             "url": item.get("link"),
             "source": "LinkedIn"
@@ -105,23 +106,23 @@ def results():
         sources = {'scholar': profile_text}
 
         scores_data = analyze_profile(sources, domain_keywords)
-        if scores_data.get("domain_scores"):
-            max_score = max(scores_data["domain_scores"].values())
-            confidence_score = max(20, int(round(max_score * 100)))  # Minimum 20%
+        if scores_data:
+            max_score = max(scores_data.values())
+            confidence_score = max(0, int(round(max_score)))
         else:
-            confidence_score = 20
+            confidence_score = 0
 
         sc['confidence'] = confidence_score
         sc['source'] = "Scholar"
         experts_list.append(sc)
 
+    # Sort all experts descending by confidence score
     experts_list.sort(key=lambda x: x.get('confidence', 0), reverse=True)
 
     return render_template('results.html', 
                           experts=experts_list, 
                           domain=domain, 
                           keywords=keywords)
-
 
 @app.post("/opt-out/<profile_id>")
 def opt_out(profile_id):

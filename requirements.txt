@@ -4,3 +4,4 @@ requests
 dotenv
 beautifulsoup4
 nltk 
+google-generativeai
