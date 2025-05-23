@@ -4,7 +4,7 @@ from config import GITHUB_TOKEN
 
 HEADERS = {'Authorization': f'token {GITHUB_TOKEN}'}
 
-def search_users_by_topic(topic, keywords=None, limit=10):
+def search_users_by_topic(topic, keywords=None, limit=100):
     """Initial user search looking at bios."""
     kw = " ".join(keywords) if keywords else ""
     query = f'{topic} {kw} in:bio'.strip()
