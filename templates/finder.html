@@ -95,7 +95,7 @@
 
 <!-- 🔄 Loading overlay -->
 <div id="loader"
-     class="fixed inset-0 z-50 hidden flex items-center justify-center
+     class="fixed inset-0 z-50 hidden flex flex-col items-center justify-center
             bg-white/80 backdrop-blur-sm">
   <svg class="h-12 w-12 animate-spin text-indigo-600"
        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -104,18 +104,56 @@
     <path class="opacity-75" fill="currentColor"
           d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
   </svg>
+
+  <!-- ⏱️ Time counter -->
+  <div id="timer" class="mt-4 text-sm text-gray-800 font-mono">0s</div>
 </div>
 
-<!-- 📜 Script to show loader on submit -->
-<!-- 📜 Script -->
+<!-- 🔄 Loading overlay -->
+<div id="loader"
+     class="fixed inset-0 z-50 hidden flex flex-col items-center justify-center
+            bg-white/80 backdrop-blur-sm">
+  <svg class="h-12 w-12 animate-spin text-indigo-600"
+       xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+    <circle class="opacity-25" cx="12" cy="12" r="10"
+            stroke="currentColor" stroke-width="4"></circle>
+    <path class="opacity-75" fill="currentColor"
+          d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+  </svg>
+
+  <!-- ⏱️ Timer below the spinner -->
+  <div id="timer" class="mt-4 text-sm text-gray-800 font-mono">0m 0s</div>
+</div>
+
+<!-- 📜 Script to show loader and start minutes:seconds timer -->
 <script>
   const loader = document.getElementById('loader');
-  const form   = document.getElementById('searchForm');
+  const form = document.getElementById('searchForm');
+  const timerEl = document.getElementById('timer');
 
-  /* show while submitting */
-  form.addEventListener('submit', () => loader.classList.remove('hidden'));
+  let seconds = 0;
+  let timerInterval;
 
-  /* hide if we return via Back/Forward cache */
-  window.addEventListener('pageshow', () => loader.classList.add('hidden'));
+  // Show loader and start timer
+  form.addEventListener('submit', () => {
+    loader.classList.remove('hidden');
+    seconds = 0;
+    timerEl.textContent = '0m 0s';
+    clearInterval(timerInterval); // clear previous just in case
+    timerInterval = setInterval(() => {
+      seconds++;
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      timerEl.textContent = `${mins}m ${secs}s`;
+    }, 1000);
+  });
+
+  // Hide loader and reset timer on back/forward navigation
+  window.addEventListener('pageshow', () => {
+    loader.classList.add('hidden');
+    clearInterval(timerInterval);
+    timerEl.textContent = '0m 0s';
+  });
 </script>
+
 {% endblock %}

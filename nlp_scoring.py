@@ -80,8 +80,9 @@ def analyze_profile(texts_dict, domain_keywords):
             combined = (
                 keyword_scores.get(domain, 0) * 0.30 +
                 gemini_scores.get(domain, 0) * 0.50 +
-                default_score * 0.20
+                default_score * 0.40
             )
+            combined = 100 if combined > 100 else combined
             combined_scores[domain].append(combined)
     
     avg_scores = {}

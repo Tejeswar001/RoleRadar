@@ -3,7 +3,7 @@ import github_api
 from nlp_scoring import analyze_profile
 import serper_api
 import scholar_api
-import random
+import orcid
 
 opted_out = set()
 
@@ -41,9 +41,15 @@ def results():
     scholar_experts = []
     linkedin_experts = []
     github_experts = []
+    orcid_experts = []
+
+    """
+    # --- ORCID veterans ---
+    orcid_experts = orcid.get_veteran_profiles(domain, max_profiles = 30)
+
 
     # --- Scholar veterans ---
-    for sc in scholar_api.search_scholar_veterans(domain, keywords_list):
+    for sc in scholar_api.search_scholar_veterans(domain, keywords_list,30):
         profile_text = sc.get('profile_text') or (sc.get('title', '') + ' ' + sc.get('interests', ''))
         sources = {'scholar': profile_text}
         scores_data = analyze_profile(sources, domain_keywords)
@@ -52,27 +58,29 @@ def results():
         sc['confidence'] = confidence_score
         sc['source'] = "Scholar"
         scholar_experts.append(sc)
-
+    """
+    
     # --- LinkedIn results via Serper API ---
-    li_results = serper_api.search_linkedin_profiles(f"{domain} {' '.join(keywords_list)}")
-    for item in li_results.get("organic", []):
-        snippet = item.get("snippet", "")
+    li_results = serper_api.search_linkedin_profiles_concurrent(f"{domain} {' '.join(keywords_list)}")
+
+    for item in li_results:
+        snippet = item["snippet"]
         if not serper_api.has_10_years_experience(snippet):
             continue
 
-        sources = {'linkedin': snippet}
-        scores_data = analyze_profile(sources, domain_keywords)
-        confidence_score = max([int(round(score)) for score in scores_data.values()], default=0)
+        scores = analyze_profile({"linkedin": snippet}, domain_keywords)
+        confidence_score = int(round(max(scores.values(), default=0)))
 
         linkedin_experts.append({
-            "name": item.get("title", "").split(" | ")[0],
-            "contact": item.get("link"),
-            "location": None,
+            "name": item["title"].split(" | ")[0],
+            "contact": item["link"],
+            "location": None,  # Could be extracted with NLP later
             "confidence": confidence_score,
-            "url": item.get("link"),
+            "url": item["link"],
             "source": "LinkedIn"
         })
 
+    
     # --- GitHub Users ---
     users = github_api.search_users_by_topic(domain, keywords_list)
     for user in users:
@@ -108,9 +116,9 @@ def results():
             })
         else:
             print(f"Skipped: {username} (Not enough experience or failed lookup)")
-
+    
     # --- Merge in required order ---
-    experts_list = scholar_experts + linkedin_experts + github_experts
+    experts_list = scholar_experts + linkedin_experts + github_experts + orcid_experts
 
     # --- Sort all experts descending by confidence score ---
     experts_list.sort(key=lambda x: x.get('confidence', 0), reverse=True)
